@@ -164,6 +164,33 @@ class AppController extends ChangeNotifier {
     _save();
   }
 
+  void saveNote(NoteItem note) {
+    final existing = note.id.isEmpty ? null : data.notes.where((item) => item.id == note.id).firstOrNull;
+    final isNew = existing == null;
+    final now = DateTime.now().toIso8601String();
+    final saved = NoteItem(
+      id: note.id.isEmpty ? _uuid.v4() : note.id,
+      title: note.title.trim(),
+      body: note.body,
+      tags: note.tags,
+      pinned: note.pinned,
+      createdAt: note.createdAt.isEmpty ? existing?.createdAt ?? now : note.createdAt,
+      updatedAt: now,
+    );
+    final notes = isNew ? [saved, ...data.notes] : data.notes.map((item) => item.id == saved.id ? saved : item).toList();
+    data = data.copyWith(notes: notes);
+    // Do not put note titles or bodies in the activity feed.
+    _prependActivity(_activity(isNew ? 'Workspace note created' : 'Workspace note updated', '', 'note', entityId: saved.id, entityType: 'note'));
+    _save();
+  }
+
+  void deleteNote(NoteItem note) {
+    data = data.copyWith(notes: data.notes.where((item) => item.id != note.id).toList());
+    // Keep note content out of activity history.
+    _prependActivity(_activity('Workspace note removed', '', 'note', entityId: note.id, entityType: 'note'));
+    _save();
+  }
+
   void moveNode(String nodeId, double x, double y) {
     data = data.copyWith(nodes: data.nodes.map((node) => node.id == nodeId ? node.copyWith(x: x, y: y) : node).toList());
     _save();

@@ -22,9 +22,9 @@ class BackupService {
       'createdAt': DateTime.now().toUtc().toIso8601String(),
       'workspace': app.data.toJson(),
       'encryptedVault': vault.encryptedExport(),
-      'securityNote': 'Vault contents in this file are AES-256-GCM encrypted. The master passphrase is not included.',
+      'securityNote': 'Workspace metadata, including Notes, is stored in readable form. Only the Vault snapshot is AES-256-GCM encrypted; the master passphrase is not included.',
     };
-    await _shareJson(payload, 'comrade-vault-backup.json', 'Encrypted Comrade Vault backup');
+    await _shareJson(payload, 'comrade-vault-backup.json', 'Comrade Vault backup · workspace readable, Vault encrypted');
   }
 
   static Future<void> exportCsv(AppController app) async {
@@ -32,7 +32,7 @@ class BackupService {
     final bytes = Uint8List.fromList(utf8.encode(csv));
     await Share.shareXFiles(
       [XFile.fromData(bytes, mimeType: 'text/csv', name: 'comrade-vault-export.csv')],
-      text: 'Comrade Vault metadata export · Vault secrets excluded',
+      text: 'Comrade Vault CSV · notes and Vault contents excluded',
       fileNameOverrides: const ['comrade-vault-export.csv'],
     );
   }

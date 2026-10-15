@@ -38,6 +38,7 @@ void main() {
         tasks: const [TaskItem(id: 'task', title: 'Review DNS', projectId: 'project')],
         renewals: const [RenewalItem(id: 'renewal', title: 'Domain renewal', projectId: 'project')],
         activities: const [],
+        notes: const [NoteItem(id: 'note', title: 'Private note title', body: 'A private note body.')],
         nodes: const [],
         edges: const [],
       );
@@ -49,6 +50,8 @@ void main() {
       expect(csv, contains('"Task","Review DNS"'));
       expect(csv, contains('"Renewal","Domain renewal"'));
       expect(csv.toLowerCase(), isNot(contains('vault')));
+      expect(csv, isNot(contains('Private note title')));
+      expect(csv, isNot(contains('A private note body.')));
     });
   });
 }

@@ -77,7 +77,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
                   scrollDirection: Axis.horizontal,
                   child: Row(
                     children: [
-                      for (final item in ['All activity', 'Project', 'Asset', 'Task', 'Security', 'Renewal', 'System'])
+                      for (final item in ['All activity', 'Project', 'Asset', 'Task', 'Note', 'Security', 'Renewal', 'System'])
                         Padding(
                           padding: const EdgeInsets.only(right: 6),
                           child: _ActivityFilter(label: item, selected: _filter == item, onTap: () => setState(() => _filter = item)),
@@ -87,7 +87,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
                 ),
                 const SizedBox(height: 15),
                 if (activities.isEmpty)
-                  const EmptyState(icon: Icons.timeline_rounded, title: 'No activity to show', description: 'Updates to projects, assets, tasks and renewals will appear here.')
+                  const EmptyState(icon: Icons.timeline_rounded, title: 'No activity to show', description: 'Updates to projects, assets, notes, tasks and renewals will appear here.')
                 else
                   _ActivityTimeline(activities: activities),
                 const SizedBox(height: 13),

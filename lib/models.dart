@@ -198,6 +198,56 @@ class ActivityItem {
   factory ActivityItem.fromJson(Map<String, dynamic> json) => ActivityItem(id: json['id'] as String? ?? '', title: json['title'] as String? ?? '', detail: json['detail'] as String? ?? '', kind: json['kind'] as String? ?? 'system', entityId: json['entityId'] as String?, entityType: json['entityType'] as String?, createdAt: json['createdAt'] as String? ?? DateTime.now().toIso8601String());
 }
 
+class NoteItem {
+  const NoteItem({
+    required this.id,
+    required this.title,
+    this.body = '',
+    this.tags = const [],
+    this.pinned = false,
+    this.createdAt = '',
+    this.updatedAt = '',
+  });
+
+  final String id;
+  final String title;
+  final String body;
+  final List<String> tags;
+  final bool pinned;
+  final String createdAt;
+  final String updatedAt;
+
+  NoteItem copyWith({String? id, String? title, String? body, List<String>? tags, bool? pinned, String? createdAt, String? updatedAt}) => NoteItem(
+        id: id ?? this.id,
+        title: title ?? this.title,
+        body: body ?? this.body,
+        tags: tags ?? this.tags,
+        pinned: pinned ?? this.pinned,
+        createdAt: createdAt ?? this.createdAt,
+        updatedAt: updatedAt ?? this.updatedAt,
+      );
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'title': title,
+        'body': body,
+        'tags': tags,
+        'pinned': pinned,
+        'createdAt': createdAt,
+        'updatedAt': updatedAt,
+      };
+
+  factory NoteItem.fromJson(Map<String, dynamic> json) => NoteItem(
+        id: json['id'] as String? ?? '',
+        title: json['title'] as String? ?? '',
+        body: json['body'] as String? ?? '',
+        tags: (json['tags'] as List<dynamic>? ?? const []).map((value) => value.toString()).toList(),
+        pinned: json['pinned'] as bool? ?? false,
+        createdAt: json['createdAt'] as String? ?? '',
+        updatedAt: json['updatedAt'] as String? ?? '',
+      );
+}
+
 class MindNode {
   const MindNode({required this.id, required this.label, required this.type, this.status = 'Healthy', this.description = '', this.projectId, this.assetId, required this.x, required this.y, this.collapsed = false});
   final String id;
@@ -235,12 +285,13 @@ class MindEdge {
 }
 
 class WorkspaceData {
-  const WorkspaceData({required this.projects, required this.assets, required this.tasks, required this.renewals, required this.activities, required this.nodes, required this.edges, this.notificationsRead = const [], this.theme = 'dark', this.accent = 'violet', this.autoLockMinutes = 5});
+  const WorkspaceData({required this.projects, required this.assets, required this.tasks, required this.renewals, required this.activities, required this.nodes, required this.edges, this.notes = const [], this.notificationsRead = const [], this.theme = 'dark', this.accent = 'violet', this.autoLockMinutes = 5});
   final List<ProjectItem> projects;
   final List<AssetItem> assets;
   final List<TaskItem> tasks;
   final List<RenewalItem> renewals;
   final List<ActivityItem> activities;
+  final List<NoteItem> notes;
   final List<MindNode> nodes;
   final List<MindEdge> edges;
   final List<String> notificationsRead;
@@ -248,9 +299,9 @@ class WorkspaceData {
   final String accent;
   final int autoLockMinutes;
 
-  WorkspaceData copyWith({List<ProjectItem>? projects, List<AssetItem>? assets, List<TaskItem>? tasks, List<RenewalItem>? renewals, List<ActivityItem>? activities, List<MindNode>? nodes, List<MindEdge>? edges, List<String>? notificationsRead, String? theme, String? accent, int? autoLockMinutes}) => WorkspaceData(
+  WorkspaceData copyWith({List<ProjectItem>? projects, List<AssetItem>? assets, List<TaskItem>? tasks, List<RenewalItem>? renewals, List<ActivityItem>? activities, List<NoteItem>? notes, List<MindNode>? nodes, List<MindEdge>? edges, List<String>? notificationsRead, String? theme, String? accent, int? autoLockMinutes}) => WorkspaceData(
     projects: projects ?? this.projects, assets: assets ?? this.assets, tasks: tasks ?? this.tasks,
-    renewals: renewals ?? this.renewals, activities: activities ?? this.activities, nodes: nodes ?? this.nodes,
+    renewals: renewals ?? this.renewals, activities: activities ?? this.activities, notes: notes ?? this.notes, nodes: nodes ?? this.nodes,
     edges: edges ?? this.edges, notificationsRead: notificationsRead ?? this.notificationsRead,
     theme: theme ?? this.theme, accent: accent ?? this.accent, autoLockMinutes: autoLockMinutes ?? this.autoLockMinutes,
   );
@@ -258,7 +309,8 @@ class WorkspaceData {
   Map<String, dynamic> toJson() => {
     'projects': projects.map((item) => item.toJson()).toList(), 'assets': assets.map((item) => item.toJson()).toList(),
     'tasks': tasks.map((item) => item.toJson()).toList(), 'renewals': renewals.map((item) => item.toJson()).toList(),
-    'activities': activities.map((item) => item.toJson()).toList(), 'nodes': nodes.map((item) => item.toJson()).toList(),
+    'activities': activities.map((item) => item.toJson()).toList(), 'notes': notes.map((item) => item.toJson()).toList(),
+    'nodes': nodes.map((item) => item.toJson()).toList(),
     'edges': edges.map((item) => item.toJson()).toList(), 'notificationsRead': notificationsRead,
     'theme': theme, 'accent': accent, 'autoLockMinutes': autoLockMinutes,
   };
@@ -269,6 +321,7 @@ class WorkspaceData {
     tasks: (json['tasks'] as List<dynamic>? ?? []).whereType<Map<String, dynamic>>().map(TaskItem.fromJson).toList(),
     renewals: (json['renewals'] as List<dynamic>? ?? []).whereType<Map<String, dynamic>>().map(RenewalItem.fromJson).toList(),
     activities: (json['activities'] as List<dynamic>? ?? []).whereType<Map<String, dynamic>>().map(ActivityItem.fromJson).toList(),
+    notes: (json['notes'] as List<dynamic>? ?? []).whereType<Map<String, dynamic>>().map(NoteItem.fromJson).toList(),
     nodes: (json['nodes'] as List<dynamic>? ?? []).whereType<Map<String, dynamic>>().map(MindNode.fromJson).toList(),
     edges: (json['edges'] as List<dynamic>? ?? []).whereType<Map<String, dynamic>>().map(MindEdge.fromJson).toList(),
     notificationsRead: (json['notificationsRead'] as List<dynamic>? ?? []).map((value) => value.toString()).toList(),
@@ -343,6 +396,11 @@ class WorkspaceData {
       ActivityItem(id: 'activity-4', title: 'Project phase updated', detail: 'Digital Comrade · Development', kind: 'project', entityId: projects[0].id, entityType: 'project', createdAt: now.subtract(const Duration(hours: 42)).toIso8601String()),
       ActivityItem(id: 'activity-5', title: 'Backup review reminder created', detail: 'Sample workspace activity · This device', kind: 'system', createdAt: now.subtract(const Duration(hours: 72)).toIso8601String()),
     ];
-    return WorkspaceData(projects: projects, assets: assets, tasks: tasks, renewals: renewals, activities: activities, nodes: nodes, edges: edges);
+    final notes = <NoteItem>[
+      NoteItem(id: 'note-weekly-reset', title: 'Weekly reset', body: 'Review active projects, choose one next action for each, and clear tasks that no longer matter.', tags: const ['planning', 'weekly'], pinned: true, createdAt: now.subtract(const Duration(days: 2)).toIso8601String(), updatedAt: now.subtract(const Duration(hours: 5)).toIso8601String()),
+      NoteItem(id: 'note-infrastructure', title: 'Infrastructure follow-ups', body: 'Check mail authentication after the SPF update. Confirm backup restoration before the next release.', tags: const ['operations', 'infrastructure'], createdAt: now.subtract(const Duration(days: 5)).toIso8601String(), updatedAt: now.subtract(const Duration(days: 1)).toIso8601String()),
+      NoteItem(id: 'note-product-principles', title: 'Product principles', body: 'Keep the first-run experience calm. Prefer clear defaults, reversible actions, and local-first privacy.', tags: const ['product', 'ideas'], createdAt: now.subtract(const Duration(days: 9)).toIso8601String(), updatedAt: now.subtract(const Duration(days: 4)).toIso8601String()),
+    ];
+    return WorkspaceData(projects: projects, assets: assets, tasks: tasks, renewals: renewals, activities: activities, notes: notes, nodes: nodes, edges: edges);
   }
 }

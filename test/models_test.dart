@@ -9,6 +9,7 @@ void main() {
       final restored = WorkspaceData.fromJson(original.toJson());
 
       expect(restored.toJson(), equals(original.toJson()));
+      expect(restored.notes, hasLength(3));
     });
 
     test('empty and partial backups receive safe defaults', () {
@@ -20,10 +21,28 @@ void main() {
       expect(workspace.projects, isEmpty);
       expect(workspace.assets, isEmpty);
       expect(workspace.tasks, isEmpty);
+      expect(workspace.notes, isEmpty);
       expect(workspace.nodes, isEmpty);
       expect(project.status, 'Idea');
       expect(task.status, 'Todo');
       expect(renewal.reminders, [30, 14, 7, 3, 1]);
+    });
+
+    test('notes preserve content, tags, pin state and timestamps in JSON', () {
+      final note = NoteItem(
+        id: 'note-1',
+        title: 'Release notes',
+        body: 'Review the launch checklist.',
+        tags: const ['launch', 'review'],
+        pinned: true,
+        createdAt: '2026-10-01T12:00:00.000Z',
+        updatedAt: '2026-10-12T08:30:00.000Z',
+      );
+      final restored = NoteItem.fromJson(note.toJson());
+
+      expect(restored.toJson(), equals(note.toJson()));
+      expect(note.copyWith(pinned: false).pinned, isFalse);
+      expect(note.copyWith(tags: const ['done']).tags, ['done']);
     });
 
     test('nullable links can be explicitly cleared with copyWith', () {

@@ -17,6 +17,7 @@ Future<void> showProjectEditor(BuildContext context, AppController controller, [
 Future<void> showAssetEditor(BuildContext context, AppController controller, [AssetItem? existing, String? type]) => showDialog<void>(context: context, builder: (_) => _AssetEditor(controller: controller, existing: existing, initialType: type));
 Future<void> showTaskEditor(BuildContext context, AppController controller, [TaskItem? existing, String initialStatus = 'Todo']) => showDialog<void>(context: context, builder: (_) => _TaskEditor(controller: controller, existing: existing, initialStatus: initialStatus));
 Future<void> showRenewalEditor(BuildContext context, AppController controller, [RenewalItem? existing]) => showDialog<void>(context: context, builder: (_) => _RenewalEditor(controller: controller, existing: existing));
+Future<void> showNoteEditor(BuildContext context, AppController controller, [NoteItem? existing]) => showDialog<void>(context: context, builder: (_) => _NoteEditor(controller: controller, existing: existing));
 
 class _ProjectEditor extends StatefulWidget {
   const _ProjectEditor({required this.controller, this.existing});
@@ -268,6 +269,101 @@ class _RenewalEditorState extends State<_RenewalEditor> {
     ])),
     onSave: _save,
   );
+}
+
+class _NoteEditor extends StatefulWidget {
+  const _NoteEditor({required this.controller, this.existing});
+  final AppController controller;
+  final NoteItem? existing;
+  @override
+  State<_NoteEditor> createState() => _NoteEditorState();
+}
+
+class _NoteEditorState extends State<_NoteEditor> {
+  final _formKey = GlobalKey<FormState>();
+  late final TextEditingController _title;
+  late final TextEditingController _body;
+  late final TextEditingController _tags;
+  late bool _pinned;
+
+  @override
+  void initState() {
+    super.initState();
+    final note = widget.existing;
+    _title = TextEditingController(text: note?.title ?? '');
+    _body = TextEditingController(text: note?.body ?? '');
+    _tags = TextEditingController(text: note?.tags.join(', ') ?? '');
+    _pinned = note?.pinned ?? false;
+  }
+
+  @override
+  void dispose() {
+    _title.dispose();
+    _body.dispose();
+    _tags.dispose();
+    super.dispose();
+  }
+
+  void _save() {
+    if (!_formKey.currentState!.validate()) return;
+    final now = DateTime.now().toIso8601String();
+    widget.controller.saveNote(NoteItem(
+      id: widget.existing?.id ?? 'note-${_uuid.v4()}',
+      title: _title.text.trim(),
+      body: _body.text.trim(),
+      tags: _parseTags(_tags.text),
+      pinned: _pinned,
+      createdAt: widget.existing?.createdAt ?? now,
+      updatedAt: now,
+    ));
+    Navigator.of(context).pop();
+  }
+
+  @override
+  Widget build(BuildContext context) => _EditorDialog(
+        eyebrow: 'LOCAL KNOWLEDGE',
+        title: widget.existing == null ? 'Create a note' : 'Edit note',
+        subtitle: 'Capture context, decisions and ideas beside your workspace.',
+        content: Form(
+          key: _formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.all(11),
+                decoration: BoxDecoration(color: VaultColors.amber.withOpacity(.07), borderRadius: BorderRadius.circular(11), border: Border.all(color: VaultColors.amber.withOpacity(.16))),
+                child: const Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(Icons.info_outline_rounded, size: 15, color: VaultColors.amber),
+                    SizedBox(width: 8),
+                    Expanded(child: Text('Notes are stored as ordinary workspace data, not encrypted. Keep passwords, keys and recovery codes in Vault.', style: TextStyle(fontSize: 9, color: VaultColors.muted, height: 1.45))),
+                  ],
+                ),
+              ),
+              _TextField(controller: _title, label: 'Note title', hint: 'Give this note a useful name', required: true, autofocus: true),
+              TextFormField(
+                controller: _body,
+                minLines: 7,
+                maxLines: 14,
+                keyboardType: TextInputType.multiline,
+                decoration: const InputDecoration(labelText: 'Note', hintText: 'Write a decision, meeting summary or idea…', alignLabelWithHint: true),
+              ),
+              const SizedBox(height: 11),
+              _TextField(controller: _tags, label: 'Tags', hint: 'planning, product, client'),
+              SwitchListTile.adaptive(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Pin this note', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700)),
+                subtitle: const Text('Keep it near the top of your notes list.', style: TextStyle(fontSize: 9)),
+                value: _pinned,
+                onChanged: (value) => setState(() => _pinned = value),
+              ),
+            ],
+          ),
+        ),
+        onSave: _save,
+      );
 }
 
 class _EditorDialog extends StatelessWidget {

@@ -1,12 +1,12 @@
 # Comrade Vault
 
-Comrade Vault is a local-first Flutter workspace for keeping project plans, digital asset metadata, tasks, renewals and their relationships in one responsive command center. A separate Vault encrypts credentials on the device before saving them.
+Comrade Vault is a local-first Flutter workspace for keeping project plans, digital asset metadata, searchable notes, tasks, renewals and their relationships in one responsive command center. Notes can be created, edited, tagged, pinned and searched locally. A separate Vault encrypts credentials on the device before saving them.
 
 This repository is a prototype, not a hosted service. It has no account system, remote database, synchronization service, cloud backup, email reminders or push-notification backend.
 
 ## What is included
 
-- **Workspace overview:** dashboard, project and asset records, and a pannable mind map that links related work.
+- **Workspace overview:** dashboard, project and asset records, searchable and taggable notes with pinning, and a pannable mind map that links related work.
 - **Operations:** task list, Kanban and agenda views; renewal tracking; local activity history; and in-app attention reminders.
 - **Encrypted Vault:** passphrase-derived key, AES-256-GCM encrypted entries, reveal/copy controls and automatic locking.
 - **Local data tools:** JSON workspace backup and restore, an encrypted-Vault-only archive that can be restored without replacing workspace metadata, and a CSV export of non-Vault metadata.
@@ -49,10 +49,10 @@ Serve the contents of `build/web` over HTTPS in production. If the app is hosted
 
 ## Data storage and security boundaries
 
-- Project, asset, task, renewal, activity, mind-map and preference data is saved locally through `shared_preferences`. This workspace metadata is **not encrypted by the Vault**.
+- Project, asset, note, task, renewal, activity, mind-map and preference data is saved locally through `shared_preferences`. Workspace metadata—including note titles, bodies and tags—is **not encrypted by the Vault**. Notes are searchable in the app and global search; keep passwords, tokens and recovery codes in the encrypted Vault instead.
 - Vault entry payloads are encrypted before persistence using **AES-256-GCM**. A key is derived from the master passphrase with **PBKDF2-HMAC-SHA-256 (310,000 iterations)** and a random per-vault salt; each encrypted payload gets its own nonce. The passphrase and derived key are not written to preferences. Vault entry IDs and update timestamps remain outside the encrypted payload, but titles, categories, usernames, secrets, URLs, notes and tags are inside it.
 - The Vault is device/browser-profile local. There is no password reset or recovery flow: losing the passphrase means losing access to the encrypted entries. Keep a separate backup and test that it can be restored.
-- A full JSON backup contains ordinary workspace metadata in readable form and the Vault snapshot in encrypted form. The encrypted-Vault export contains only the encrypted snapshot. CSV export is limited to project, asset, task and renewal metadata and excludes Vault contents.
+- A full JSON backup contains ordinary workspace metadata—including Notes—in readable form and the Vault snapshot in encrypted form. The encrypted-Vault export contains only the encrypted snapshot. CSV export is limited to project, asset, task and renewal metadata; it excludes Notes and Vault contents.
 - Copying a value to the clipboard transfers it outside the app; the app does not promise to clear the operating system or browser clipboard.
 - Local encryption does not protect an already-unlocked device, a compromised browser, browser extensions, or files exported to an unsafe location. Review and protect backups accordingly.
 
@@ -68,9 +68,9 @@ The connectivity indicator reports network availability only; it does not imply 
 - `lib/app_controller.dart` — local workspace state, persistence, record actions and activity history.
 - `lib/services/vault_service.dart` — encrypted Vault lifecycle and storage.
 - `lib/services/backup_service.dart` — JSON/CSV exports and backup-file parsing.
-- `lib/screens/` — dashboard, map, record, operations, Vault and settings screens.
+- `lib/screens/` — dashboard, map, notes, record, operations, Vault and settings screens.
 - `lib/widgets/` — shared interface components and navigation.
-- `test/` — controller persistence and relationship tests, model serialization, CSV export safety and Vault encryption tests.
+- `test/` — controller persistence, relationships and note lifecycle/privacy tests; model serialization; CSV export safety; and Vault encryption tests.
 - `web/` — browser bootstrap, manifest and icons.
 
 ## Validation status

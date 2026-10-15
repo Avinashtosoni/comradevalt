@@ -58,4 +58,49 @@ void main() {
     expect(controller.data.nodes.any((item) => item.id == nodeId), isFalse);
     expect(controller.data.edges.where((edge) => edge.source == nodeId || edge.target == nodeId), isEmpty);
   });
+
+  test('notes can be created, updated and deleted without leaking their contents to activity', () async {
+    final controller = AppController();
+    addTearDown(controller.dispose);
+    await controller.initialize();
+
+    const note = NoteItem(
+      id: 'note-controller-test',
+      title: 'Sensitive planning context',
+      body: 'Keep this private note body out of activity history.',
+      tags: ['planning', 'private'],
+      pinned: true,
+    );
+    controller.saveNote(note);
+    await controller.replaceWorkspace(controller.data);
+
+    var savedNote = controller.data.notes.singleWhere((item) => item.id == note.id);
+    expect(savedNote.title, note.title);
+    expect(savedNote.body, note.body);
+    expect(savedNote.tags, note.tags);
+    expect(savedNote.pinned, isTrue);
+    expect(savedNote.createdAt, isNotEmpty);
+    expect(controller.data.activities.first.title, 'Workspace note created');
+    expect(controller.data.activities.first.detail, isEmpty);
+    final activityText = controller.data.activities.map((item) => '${item.title} ${item.detail}').join(' ');
+    expect(activityText, isNot(contains(note.title)));
+    expect(activityText, isNot(contains(note.body)));
+
+    final preferences = await SharedPreferences.getInstance();
+    final saved = jsonDecode(preferences.getString('comrade_vault.workspace.v1')!) as Map<String, dynamic>;
+    expect(WorkspaceData.fromJson(saved).notes.singleWhere((item) => item.id == note.id).body, note.body);
+
+    controller.saveNote(savedNote.copyWith(title: 'Updated planning context'));
+    await controller.replaceWorkspace(controller.data);
+    expect(controller.data.notes.where((item) => item.id == note.id), hasLength(1));
+    expect(controller.data.notes.singleWhere((item) => item.id == note.id).createdAt, savedNote.createdAt);
+    expect(controller.data.notes.singleWhere((item) => item.id == note.id).title, 'Updated planning context');
+
+    savedNote = controller.data.notes.singleWhere((item) => item.id == note.id);
+    controller.deleteNote(savedNote);
+    await controller.replaceWorkspace(controller.data);
+    expect(controller.data.notes.any((item) => item.id == note.id), isFalse);
+    expect(controller.data.activities.first.title, 'Workspace note removed');
+    expect(controller.data.activities.first.detail, isEmpty);
+  });
 }

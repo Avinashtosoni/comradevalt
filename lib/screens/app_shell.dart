@@ -13,6 +13,7 @@ import 'assets_screen.dart';
 import 'dashboard_screen.dart';
 import 'editors.dart';
 import 'mind_map_screen.dart';
+import 'notes_screen.dart';
 import 'notifications_screen.dart';
 import 'projects_screen.dart';
 import 'renewals_screen.dart';
@@ -85,6 +86,8 @@ class _AppShellState extends State<AppShell> {
         return ProjectsScreen(onNavigate: _navigate, onFocusNode: (id) { setState(() { _focusNodeId = id; _section = AppSection.mindMap; }); });
       case AppSection.assets:
         return AssetsScreen(onNavigate: _navigate, onFocusNode: (id) { setState(() { _focusNodeId = id; _section = AppSection.mindMap; }); });
+      case AppSection.notes:
+        return NotesScreen(onNavigate: _navigate);
       case AppSection.vault:
         return const VaultScreen();
       case AppSection.tasks:
@@ -106,13 +109,13 @@ class _AppShellState extends State<AppShell> {
     await showDialog<void>(context: context, barrierColor: Colors.black.withOpacity(.68), builder: (dialogContext) => StatefulBuilder(builder: (context, setDialogState) {
       final results = _searchResults(app.data, queryController.text.trim());
       return Dialog(backgroundColor: Theme.of(context).colorScheme.surface, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: BorderSide(color: Theme.of(context).dividerColor)), child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 590, maxHeight: 620), child: Column(mainAxisSize: MainAxisSize.min, children: [
-        Padding(padding: const EdgeInsets.fromLTRB(18, 17, 18, 13), child: TextField(controller: queryController, autofocus: true, onChanged: (_) => setDialogState(() {}), decoration: InputDecoration(prefixIcon: const Icon(Icons.search_rounded, size: 19), hintText: 'Search projects, assets, tasks…', suffixIcon: IconButton(onPressed: () { queryController.clear(); setDialogState(() {}); }, icon: const Icon(Icons.close_rounded, size: 17))))),
+        Padding(padding: const EdgeInsets.fromLTRB(18, 17, 18, 13), child: TextField(controller: queryController, autofocus: true, onChanged: (_) => setDialogState(() {}), decoration: InputDecoration(prefixIcon: const Icon(Icons.search_rounded, size: 19), hintText: 'Search projects, assets, tasks, notes…', suffixIcon: IconButton(onPressed: () { queryController.clear(); setDialogState(() {}); }, icon: const Icon(Icons.close_rounded, size: 17))))),
         Divider(height: 1, color: Theme.of(context).dividerColor),
-        Flexible(child: results.isEmpty ? const EmptyState(icon: Icons.manage_search_rounded, title: 'No matches yet', description: 'Try a project name, domain, task or tag.') : ListView.builder(padding: const EdgeInsets.symmetric(vertical: 9), itemCount: results.length, itemBuilder: (context, index) {
+        Flexible(child: results.isEmpty ? const EmptyState(icon: Icons.manage_search_rounded, title: 'No matches yet', description: 'Try a project, domain, task, note or tag.') : ListView.builder(padding: const EdgeInsets.symmetric(vertical: 9), itemCount: results.length, itemBuilder: (context, index) {
           final result = results[index];
           return ListTile(dense: true, leading: Container(width: 34, height: 34, decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withOpacity(.1), borderRadius: BorderRadius.circular(10)), child: Icon(result.icon, size: 16, color: Theme.of(context).colorScheme.primary)), title: Text(result.title, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700)), subtitle: Text('${result.type} · ${result.subtitle}', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 10)), trailing: const Icon(Icons.north_west_rounded, size: 13), onTap: () { Navigator.of(dialogContext).pop(); _selectResult(result); });
         })),
-        Padding(padding: const EdgeInsets.fromLTRB(15, 9, 15, 11), child: Row(children: [const Icon(Icons.lock_outline_rounded, size: 13, color: VaultColors.muted), const SizedBox(width: 7), const Expanded(child: Text('Vault contents stay out of global search while encrypted.', style: TextStyle(fontSize: 9.5, color: VaultColors.muted))), Text('ESC', style: TextStyle(color: VaultColors.muted.withOpacity(.8), fontSize: 9, fontWeight: FontWeight.w700))])),
+        Padding(padding: const EdgeInsets.fromLTRB(15, 9, 15, 11), child: Row(children: [const Icon(Icons.info_outline_rounded, size: 13, color: VaultColors.muted), const SizedBox(width: 7), const Expanded(child: Text('Vault secrets stay out of search. Notes are searchable but not encrypted.', style: TextStyle(fontSize: 9.5, color: VaultColors.muted))), Text('ESC', style: TextStyle(color: VaultColors.muted.withOpacity(.8), fontSize: 9, fontWeight: FontWeight.w700))])),
       ])));
     }));
     queryController.dispose();
@@ -121,9 +124,21 @@ class _AppShellState extends State<AppShell> {
   void _selectResult(_SearchResult result) {
     if (result.nodeId != null) {
       setState(() { _focusNodeId = result.nodeId; _section = AppSection.mindMap; });
-    } else {
-      setState(() => _section = result.section);
+      return;
     }
+    if (result.noteId != null) {
+      final app = context.read<AppController>();
+      final matches = app.data.notes.where((note) => note.id == result.noteId);
+      final note = matches.isEmpty ? null : matches.first;
+      setState(() => _section = AppSection.notes);
+      if (note != null) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) showNoteEditor(context, app, note);
+        });
+      }
+      return;
+    }
+    setState(() => _section = result.section);
   }
 
   Future<void> _showQuickActions() async {
@@ -140,6 +155,7 @@ class _AppShellState extends State<AppShell> {
         _QuickActionTile('Credential', Icons.key_rounded, () => Navigator.pop(context, _QuickAction.credential)),
         _QuickActionTile('Task', Icons.checklist_rounded, () => Navigator.pop(context, _QuickAction.task)),
         _QuickActionTile('Document', Icons.description_outlined, () => Navigator.pop(context, _QuickAction.document)),
+        _QuickActionTile('Note', Icons.sticky_note_2_rounded, () => Navigator.pop(context, _QuickAction.note)),
       ]),
     ]))));
     if (!mounted || action == null) return;
@@ -152,6 +168,10 @@ class _AppShellState extends State<AppShell> {
       case _QuickAction.api: await showAssetEditor(context, controller, null, 'API'); break;
       case _QuickAction.task: await showTaskEditor(context, controller); break;
       case _QuickAction.document: await showAssetEditor(context, controller, null, 'Document'); break;
+      case _QuickAction.note:
+        setState(() => _section = AppSection.notes);
+        await showNoteEditor(context, controller);
+        break;
       case _QuickAction.credential:
         setState(() => _section = AppSection.vault);
         _showMessage('Set up or unlock your Vault to add an encrypted credential.');
@@ -162,7 +182,7 @@ class _AppShellState extends State<AppShell> {
   void _showMoreSheet() {
     showModalBottomSheet<void>(context: context, backgroundColor: Theme.of(context).colorScheme.surface, showDragHandle: true, builder: (context) => SafeArea(child: Padding(padding: const EdgeInsets.fromLTRB(18, 0, 18, 18), child: Column(mainAxisSize: MainAxisSize.min, children: [
       const Align(alignment: Alignment.centerLeft, child: Padding(padding: EdgeInsets.only(bottom: 9), child: Text('Workspace', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800)))),
-      ...[AppSection.assets, AppSection.tasks, AppSection.renewals, AppSection.activity, AppSection.notifications, AppSection.settings].map((section) => ListTile(dense: true, leading: Icon(section.icon, size: 19, color: _section == section ? Theme.of(context).colorScheme.primary : VaultColors.muted), title: Text(section.label, style: const TextStyle(fontSize: 12)), trailing: _section == section ? Icon(Icons.check_rounded, color: Theme.of(context).colorScheme.primary, size: 17) : null, onTap: () { Navigator.pop(context); _navigate(section); })),
+      ...[AppSection.assets, AppSection.notes, AppSection.tasks, AppSection.renewals, AppSection.activity, AppSection.notifications, AppSection.settings].map((section) => ListTile(dense: true, leading: Icon(section.icon, size: 19, color: _section == section ? Theme.of(context).colorScheme.primary : VaultColors.muted), title: Text(section.label, style: const TextStyle(fontSize: 12)), trailing: _section == section ? Icon(Icons.check_rounded, color: Theme.of(context).colorScheme.primary, size: 17) : null, onTap: () { Navigator.pop(context); _navigate(section); })),
     ]))));
   }
 
@@ -214,7 +234,7 @@ class _QuickActionTile extends StatelessWidget {
   Widget build(BuildContext context) => InkWell(onTap: onTap, borderRadius: BorderRadius.circular(13), child: Container(width: 104, padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12), decoration: BoxDecoration(color: Theme.of(context).scaffoldBackgroundColor, borderRadius: BorderRadius.circular(13), border: Border.all(color: Theme.of(context).dividerColor)), child: Column(children: [Icon(icon, size: 19, color: Theme.of(context).colorScheme.primary), const SizedBox(height: 7), Text(label, textAlign: TextAlign.center, style: const TextStyle(fontSize: 9.5, fontWeight: FontWeight.w600))])));
 }
 
-enum _QuickAction { project, domain, github, server, cloudflare, api, credential, task, document }
+enum _QuickAction { project, domain, github, server, cloudflare, api, credential, task, document, note }
 
 class _OfflineBanner extends StatelessWidget {
   const _OfflineBanner({required this.isOnline, this.message});
@@ -235,13 +255,14 @@ class _LoadingShell extends StatelessWidget {
 }
 
 class _SearchResult {
-  const _SearchResult({required this.title, required this.subtitle, required this.type, required this.icon, required this.section, this.nodeId});
+  const _SearchResult({required this.title, required this.subtitle, required this.type, required this.icon, required this.section, this.nodeId, this.noteId});
   final String title;
   final String subtitle;
   final String type;
   final IconData icon;
   final AppSection section;
   final String? nodeId;
+  final String? noteId;
 }
 
 List<_SearchResult> _searchResults(WorkspaceData data, String query) {
@@ -259,6 +280,11 @@ List<_SearchResult> _searchResults(WorkspaceData data, String query) {
   }
   for (final renewal in data.renewals) {
     if ('${renewal.title} ${renewal.provider} ${renewal.category}'.toLowerCase().contains(q)) results.add(_SearchResult(title: renewal.title, subtitle: renewal.provider, type: 'Renewal', icon: Icons.event_repeat_rounded, section: AppSection.renewals));
+  }
+  for (final note in data.notes) {
+    if ('${note.title} ${note.body} ${note.tags.join(' ')}'.toLowerCase().contains(q)) {
+      results.add(_SearchResult(title: note.title, subtitle: note.tags.isEmpty ? 'Workspace note' : note.tags.map((tag) => '#$tag').join(' '), type: 'Note', icon: Icons.sticky_note_2_rounded, section: AppSection.notes, noteId: note.id));
+    }
   }
   for (final node in data.nodes) {
     if ('${node.label} ${node.type} ${node.description}'.toLowerCase().contains(q) && !results.any((result) => result.nodeId == node.id)) results.add(_SearchResult(title: node.label, subtitle: node.status, type: node.type, icon: _assetIcon(node.type), section: AppSection.mindMap, nodeId: node.id));

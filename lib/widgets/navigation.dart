@@ -15,6 +15,7 @@ const workspaceDestinations = [
   NavDestination('dashboard', 'Dashboard', Icons.grid_view_rounded),
   NavDestination('projects', 'Projects', Icons.folder_copy_rounded),
   NavDestination('assets', 'Digital Assets', Icons.widgets_rounded),
+  NavDestination('notes', 'Notes', Icons.sticky_note_2_rounded),
   NavDestination('vault', 'Vault', Icons.key_rounded),
 ];
 const operationsDestinations = [
@@ -158,9 +159,9 @@ class FullNavigation extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Private by design', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700)),
+                        Text('Vault encrypted locally', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700)),
                         SizedBox(height: 2),
-                        Text('Secrets encrypted on device', style: TextStyle(fontSize: 8.5, color: VaultColors.muted)),
+                        Text('Workspace notes are not encrypted', style: TextStyle(fontSize: 8.5, color: VaultColors.muted)),
                       ],
                     ),
                   ),
