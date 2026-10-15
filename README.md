@@ -70,7 +70,7 @@ The connectivity indicator reports network availability only; it does not imply 
 - `lib/services/backup_service.dart` — JSON/CSV exports and backup-file parsing.
 - `lib/screens/` — dashboard, map, record, operations, Vault and settings screens.
 - `lib/widgets/` — shared interface components and navigation.
-- `test/` — model serialization and Vault encryption tests.
+- `test/` — controller persistence and relationship tests, model serialization, CSV export safety and Vault encryption tests.
 - `web/` — browser bootstrap, manifest and icons.
 
 ## Validation status
