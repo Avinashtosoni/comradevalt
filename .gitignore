@@ -1,0 +1,21 @@
+# Dart and Flutter generated files
+.dart_tool/
+.packages
+.pub-cache/
+.pub/
+build/
+coverage/
+.flutter-plugins
+.flutter-plugins-dependencies
+
+# IDE metadata
+.idea/
+.vscode/
+*.iml
+
+# Platform build products
+android/.gradle/
+android/app/.cxx/
+ios/Flutter/Generated.xcconfig
+macos/Flutter/GeneratedPluginRegistrant.swift
+windows/flutter/ephemeral/
