@@ -6,7 +6,9 @@ import '../app_theme.dart';
 import '../platform/install_prompt.dart' as install;
 import '../sections.dart';
 import '../services/backup_service.dart';
+import '../services/cloud_sync_service.dart';
 import '../services/vault_service.dart';
+import '../widgets/cloud_sync_card.dart';
 import '../widgets/common.dart';
 
 class SettingsScreen extends StatelessWidget {
@@ -14,16 +16,16 @@ class SettingsScreen extends StatelessWidget {
   final ValueChanged<AppSection> onNavigate;
 
   @override
-  Widget build(BuildContext context) => Consumer2<AppController, VaultService>(builder: (context, app, vault, _) {
+  Widget build(BuildContext context) => Consumer3<AppController, VaultService, CloudSyncService>(builder: (context, app, vault, cloud, _) {
     final compact = MediaQuery.sizeOf(context).width < 850;
     final pad = compact ? 16.0 : 28.0;
     return SingleChildScrollView(padding: EdgeInsets.fromLTRB(pad, compact ? 18 : 27, pad, 30), child: Center(child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 1250), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       PageHeader(eyebrow: 'PREFERENCES', title: 'Settings', subtitle: 'A little care for the workspace that keeps everything together.'),
       if (compact) ...[
-        _AppearanceCard(app: app), const SizedBox(height: 13), _SecurityCard(app: app, vault: vault, onGoVault: () => onNavigate(AppSection.vault)), const SizedBox(height: 13), _DataCard(app: app, vault: vault), const SizedBox(height: 13), _InstallCard(),
+        _AppearanceCard(app: app), const SizedBox(height: 13), _SecurityCard(app: app, vault: vault, onGoVault: () => onNavigate(AppSection.vault)), const SizedBox(height: 13), _DataCard(app: app, vault: vault), const SizedBox(height: 13), CloudSyncCard(app: app, cloud: cloud, vault: vault), const SizedBox(height: 13), _InstallCard(),
       ] else Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Expanded(child: Column(children: [_AppearanceCard(app: app), const SizedBox(height: 13), _InstallCard()])), const SizedBox(width: 13),
-        Expanded(child: Column(children: [_SecurityCard(app: app, vault: vault, onGoVault: () => onNavigate(AppSection.vault)), const SizedBox(height: 13), _DataCard(app: app, vault: vault)])),
+        Expanded(child: Column(children: [_SecurityCard(app: app, vault: vault, onGoVault: () => onNavigate(AppSection.vault)), const SizedBox(height: 13), _DataCard(app: app, vault: vault), const SizedBox(height: 13), CloudSyncCard(app: app, cloud: cloud, vault: vault)])),
       ]),
       const SizedBox(height: 15),
       _LocalArchitectureNote(),
@@ -93,7 +95,7 @@ class _SecurityCard extends StatelessWidget {
                 children: [
                   Icon(Icons.info_outline_rounded, size: 15, color: VaultColors.amber),
                   SizedBox(width: 8),
-                  Expanded(child: Text('This build is local-first. Server authentication, MFA, passkeys, account recovery and multi-device sessions need a configured backend and are not simulated here.', style: TextStyle(fontSize: 9, color: VaultColors.muted, height: 1.5))),
+                  Expanded(child: Text('Supabase email authentication and manual cloud backups are optional. MFA, passkeys, password recovery and automatic realtime sync are not implemented.', style: TextStyle(fontSize: 9, color: VaultColors.muted, height: 1.5))),
                 ],
               ),
             ),
@@ -106,9 +108,9 @@ class _SecurityCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('This device', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700)),
+                      Text('Device storage', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700)),
                       SizedBox(height: 2),
-                      Text('Local-only session · no server account', style: TextStyle(fontSize: 8.5, color: VaultColors.muted)),
+                      Text('Vault stays local · cloud copy is optional', style: TextStyle(fontSize: 8.5, color: VaultColors.muted)),
                     ],
                   ),
                 ),
@@ -184,4 +186,4 @@ class _InstallCard extends StatelessWidget {
   Future<void> _install(BuildContext context, bool canInstall) async { if (canInstall) { final accepted = await install.promptInstall(); if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(accepted ? 'Comrade Vault is being installed.' : 'Install was dismissed.'))); return; } showDialog<void>(context: context, builder: (context) => AlertDialog(title: const Text('Install Comrade Vault'), content: const Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [Text('Chrome or Edge on desktop', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 11)), SizedBox(height: 4), Text('Use the install icon in the address bar, or choose “Install app” from the browser menu.', style: TextStyle(fontSize: 10, color: VaultColors.muted)), SizedBox(height: 12), Text('Android Chrome', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 11)), SizedBox(height: 4), Text('Open the browser menu and choose “Install app” or “Add to Home screen”.', style: TextStyle(fontSize: 10, color: VaultColors.muted)), SizedBox(height: 12), Text('iPhone or iPad', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 11)), SizedBox(height: 4), Text('In Safari, tap Share, then “Add to Home Screen”.', style: TextStyle(fontSize: 10, color: VaultColors.muted))]), actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('Got it'))])); }
 }
 
-class _LocalArchitectureNote extends StatelessWidget { const _LocalArchitectureNote(); @override Widget build(BuildContext context) => Container(padding: const EdgeInsets.all(14), decoration: BoxDecoration(color: VaultColors.violet.withOpacity(.045), borderRadius: BorderRadius.circular(13), border: Border.all(color: VaultColors.violet.withOpacity(.13))), child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [const Icon(Icons.info_outline_rounded, color: VaultColors.violet, size: 16), const SizedBox(width: 9), const Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('Local-first prototype', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800)), SizedBox(height: 4), Text('Workspace records and notes are stored in this browser profile without encryption. Only Vault records are encrypted client-side with AES-256-GCM and PBKDF2 before persistence. No Supabase, authentication server, remote sync or cloud backup is configured in this build.', style: TextStyle(fontSize: 9, color: VaultColors.muted, height: 1.55))]))])); }
+class _LocalArchitectureNote extends StatelessWidget { const _LocalArchitectureNote(); @override Widget build(BuildContext context) => Container(padding: const EdgeInsets.all(14), decoration: BoxDecoration(color: VaultColors.violet.withOpacity(.045), borderRadius: BorderRadius.circular(13), border: Border.all(color: VaultColors.violet.withOpacity(.13))), child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [const Icon(Icons.info_outline_rounded, color: VaultColors.violet, size: 16), const SizedBox(width: 9), const Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('Local-first prototype', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800)), SizedBox(height: 4), Text('Workspace records and notes are stored locally without encryption. Optional Supabase uses email auth and Row Level Security for manual JSONB cloud backups; workspace content remains readable to project administrators. Vault records are encrypted client-side and never uploaded.', style: TextStyle(fontSize: 9, color: VaultColors.muted, height: 1.55))]))])); }

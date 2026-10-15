@@ -5,6 +5,7 @@ import 'app_controller.dart';
 import 'app_theme.dart';
 import 'platform/install_prompt.dart';
 import 'screens/app_shell.dart';
+import 'services/cloud_sync_service.dart';
 import 'services/vault_service.dart';
 
 Future<void> main() async {
@@ -14,10 +15,13 @@ Future<void> main() async {
   await appController.initialize();
   final vaultService = VaultService();
   await vaultService.initialize(appController.data.autoLockMinutes);
+  final cloudSyncService = CloudSyncService();
+  await cloudSyncService.initialize();
   runApp(MultiProvider(
     providers: [
       ChangeNotifierProvider.value(value: appController),
       ChangeNotifierProvider.value(value: vaultService),
+      ChangeNotifierProvider.value(value: cloudSyncService),
     ],
     child: const ComradeVaultApp(),
   ));
